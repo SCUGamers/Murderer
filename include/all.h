@@ -196,14 +196,14 @@ namespace MapManager {
     bool Map[30][40];
 }
 
-std::pair<int,int> getMap(int x,int y,Shader *sp,Texture *bp,Texture *ep) {
-    FILE* fptr = fopen(("./resources/map/"+std::to_string(x)+"-"+std::to_string(y)).c_str(),"r");
+std::pair<int,int> getMap(int x,Shader *sp,Texture *bp,Texture *ep) {
+    FILE* fptr = fopen(("./resources/map/"+std::to_string(x)).c_str(),"r");
     MapManager::Items.clear();
     MapManager::Creatures.clear();
     MapManager::Bullets.clear();
     for(int i=0;i<30;i++) for(int j=0;j<40;j++) MapManager::Map[i][j]=0;
     char buf[64]; int posx,posy;
-    for(int i=0;i<30;i++) {
+    for(int i=1;i<30;i++) {
         fgets(buf,sizeof(buf),fptr);
         assert(strlen(buf)==41);
         for(int j=0;j<40;j++) {
@@ -211,7 +211,7 @@ std::pair<int,int> getMap(int x,int y,Shader *sp,Texture *bp,Texture *ep) {
             if(c=='*') {
                 MapManager::Items.emplace_back(sp,bp,X,Y);
                 MapManager::Map[i][j]=1;
-                std::cerr<<"#"<<i<<' '<<j<<std::endl;
+                // std::cerr<<"#"<<i<<' '<<j<<std::endl;
             } else if(c=='E') {
                 MapManager::Creatures.emplace_back(sp,ep,"enemy",X,Y+1);
             } else if(c=='P') {
@@ -245,7 +245,7 @@ float fixMovementX(Creature &c) {
     float nx=c.xpos+c.velx;
     xl=std::min(xl,std::max(0,(int)floor((nx+390)/20.)));
     xr=std::max(xr,(int)ceil((nx+390.)/20.));
-
+    xl=std::max(0,xl-1); xr=std::min(39,xr+1); yl=std::max(0,yl-1); yr=std::min(29,yr+1);
     Con_Hul MoveCrashBox=Mer(Con(c),Con(c,c.velx,0));
     for(int i=yl;i<=yr;i++) for(int j=xl;j<=xr;j++) if(MapManager::Map[i][j]) {
         float Y=10+(14-i)*20,X=10+(j-20)*20;
@@ -262,6 +262,7 @@ float fixMovementY(Creature &c) {
     float ny=c.ypos+c.vely;
     yl=std::min(yl,std::max(0,(int)floor((290.-ny)/20.)));
     yr=std::max(yr,(int)ceil((290.-ny)/20.));
+    xl=std::max(0,xl-1); xr=std::min(39,xr+1); yl=std::max(0,yl-1); yr=std::min(29,yr+1);
 
     Con_Hul MoveCrashBox=Mer(Con(c),Con(c,0,c.vely));
     for(int i=yl;i<=yr;i++) for(int j=xl;j<=xr;j++) if(MapManager::Map[i][j]) {
@@ -282,6 +283,7 @@ float fixMovement(Bullet &c) {
     float nx=c.xpos+c.velx;
     xl=std::min(xl,std::max(0,(int)floor((nx+390.)/20.)));
     xr=std::max(xr,(int)ceil((nx+390.)/20.));
+    xl=std::max(0,xl-1); xr=std::min(39,xr+1); yl=std::max(0,yl-1); yr=std::min(29,yr+1);
 
     Con_Hul MoveCrashBox=Mer(Con(c),Con(c,c.velx,0));
     for(int i=yl;i<=yr;i++) for(int j=xl;j<=xr;j++) if(MapManager::Map[i][j]) {
@@ -301,10 +303,10 @@ bool checkfloat(Creature &c) {
     return c.accy != 0;
 }
 
-void calcDamage(Creature &c) {
+void calcDamage(Creature &c,int Atk=-1) {
     Con_Hul MoveCrash=Con(c);
     for(auto &B: MapManager::Bullets) if(!B.use&&B.type!=c.type&&!chk_PP(MoveCrash,Con(B))) {
-        c.health -= B.atk;
+        if(Atk==-1) c.health -= B.atk; else c.health-=Atk;
         std::cerr<<"!"<<c.type<<' '<<c.health<<std::endl;
         B.use = 1;
     }

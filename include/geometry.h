@@ -88,7 +88,8 @@ bool chk_PP(const Polygon &A,const Polygon &B) {
 	return 1;
 }
 bool chk_con_PP(const Polygon &A,const Polygon &B) { for(Point x:B) if(!chk_P_in_Po(A,x)) return 0; return 1; }
-#undef db double
-#undef vec Point
-#undef eps 1e-8
+#undef db
+#undef vec
+#undef eps
+#undef Polygon
 #endif
