@@ -46,6 +46,7 @@ int main() {
             if(levely==1) {
                 // input
                 // -----
+                // keyboard option
                 if(press(GLFW_KEY_R)&&(clock()-Ctime)>200) {
                     Ctime=clock();
                     lstt = -1e9, atkt = -1e9; enemyt=clock();
@@ -84,11 +85,11 @@ int main() {
                     for(auto &c:MapManager::Creatures) {
                         float disx;
                         if(c.face) disx=-200; else disx=200;
-                        Con_Hul Box=Mer(Con(c),Con(c,disx,0));
-                        if(!chk_PP(Box,Con(My))) {
+                        Con_Hul Box=Mer(Con(c),Con(c,disx,0)); // 视野
+                        if(!chk_PP(Box,Con(My))) { // 视野中是否有人
                             MapManager::Bullets.emplace_back(&Texture_Shader,&bullet_tex,"enemy",c.xpos,c.ypos);
                             auto ptr=MapManager::Bullets.rbegin();
-                            if(c.face) ptr->velx=-2; else ptr->velx=2;
+                            if(c.face) ptr->velx=-2; else ptr->velx=2; // 射出子弹
                         }
                     }
                 }
@@ -124,6 +125,7 @@ int main() {
                     }
                 }
                 
+                // 剑反弹子弹
                 if(Knifepd&&levelx!=5) {
                     Knife.ypos = My.ypos;
                     if(My.face) Knife.xpos = My.xpos - My.X - Knife.X;
@@ -136,6 +138,7 @@ int main() {
                     }
                 }
 
+                // 伤害统计
                 if(levelx==4) calcDamage(My,7); else calcDamage(My);
                 for(auto &c:MapManager::Creatures) {
                     calcDamage(c);
@@ -153,13 +156,15 @@ int main() {
                     levelx=7; continue ;
                     // Game Over
                 }
+
+                // 更新现在的实体状态
                 std::vector<Creature>_C;
                 for(auto &c:MapManager::Creatures) if(c.health>0) _C.emplace_back(c); else My.health=std::min(My.health+3,20);
                 MapManager::Creatures.swap(_C);
                 std::vector<Bullet>_B;
                 for(auto &b:MapManager::Bullets) if(!b.use) _B.emplace_back(b);
                 MapManager::Bullets.swap(_B);
-                if(_C.empty()) {
+                if(_C.empty()) { // 杀完了
                     levely++;
                     continue ;
                 }

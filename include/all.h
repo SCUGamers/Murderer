@@ -11,7 +11,7 @@
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-const int xMax = SCR_WIDTH / 2, yMax = SCR_HEIGHT / 2;
+const int xMax = SCR_WIDTH / 2, yMax = SCR_HEIGHT / 2; // 默认屏幕大小
 
 const char Game_Name[]="Game";
 
@@ -19,10 +19,10 @@ const char Game_Name[]="Game";
 
 // classes
 
-class Texture {
+class Texture { // 纹理
 public:
     unsigned int ID;
-    int width, height, nrChannels;
+    int width, height, nrChannels; // 图片大小和色轨数
     Texture() : ID(-1u) {}
     Texture(const char *pic) {
         glGenTextures(1, &ID);
@@ -60,16 +60,16 @@ namespace ResourceManager {
     }
 }
 
-float ver[32]={
+float ver[32]={ // 渲染辅助数组
     0, 0, 0, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
     0, 0, 0, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
     0, 0, 0, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
     0, 0, 0, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f
 };
-class Item {
+class Item {  // 物体
 public:
     unsigned int VAO,VBO,EBO;
-    float xpos, ypos, X, Y;
+    float xpos, ypos, X, Y; // 中心位置和伤害
     Shader* shader;
     Texture* tex;
     Item(Shader* sp, Texture *tp, float x, float y) {
@@ -120,24 +120,24 @@ public:
     }
 };
 
-class Creature : public Item {
+class Creature : public Item { // 生物
 public:
     float velx;
-    float vely, accy;
-    bool face;
-    int health;
+    float vely, accy; // 速度
+    bool face; // 朝向
+    int health; // 血量
     int type; // 0 : enemy ; 1 : player
     Creature(Shader* sp, Texture *tp, std::string t, float x, float y):
         Item(sp,tp,x,y),velx(0),vely(0),accy(0),health(20),face(0),
         type(t=="player") {}
 };
 
-class Bullet : public Item {
+class Bullet : public Item { // 子弹
 public:
     int type; // 0 : enemy ; 1 : player ; 2 : env
-    bool use;
-    float velx;
-    int atk = 5;
+    bool use; // 是否造成伤害
+    float velx; // 速度
+    int atk = 5; // 伤害
     Bullet(Shader* sp, Texture *tp, std::string t, float x, float y):
         Item(sp,tp,x,y),velx(0),atk(5),
         type(t=="env" ? 2 : (t=="player")),use(0) {}
@@ -190,24 +190,25 @@ GLFWwindow* GLFW_Prework() {
 // core function
 
 namespace MapManager {
+    // Map data storage
     std::vector<Item> Items;
     std::vector<Creature> Creatures;
     std::vector<Bullet> Bullets;
     bool Map[30][40];
 }
 
-std::pair<int,int> getMap(int x,Shader *sp,Texture *bp,Texture *ep) {
+std::pair<int,int> getMap(int x,Shader *sp,Texture *bp,Texture *ep) { // 解析地图
     FILE* fptr = fopen(("./resources/map/"+std::to_string(x)).c_str(),"r");
     MapManager::Items.clear();
     MapManager::Creatures.clear();
     MapManager::Bullets.clear();
-    for(int i=0;i<30;i++) for(int j=0;j<40;j++) MapManager::Map[i][j]=0;
+    for(int i=0;i<30;i++) for(int j=0;j<40;j++) MapManager::Map[i][j]=0; // 清空
     char buf[64]; int posx,posy;
     for(int i=1;i<30;i++) {
         fgets(buf,sizeof(buf),fptr);
         assert(strlen(buf)==41);
         for(int j=0;j<40;j++) {
-            float Y=10+(14-i)*20,X=10+(j-20)*20; char c=buf[j];
+            float Y=10+(14-i)*20,X=10+(j-20)*20; char c=buf[j]; // 计算在默认屏幕中的位置
             if(c=='*') {
                 MapManager::Items.emplace_back(sp,bp,X,Y);
                 MapManager::Map[i][j]=1;
@@ -219,7 +220,7 @@ std::pair<int,int> getMap(int x,Shader *sp,Texture *bp,Texture *ep) {
             }
         }
     }
-    return {posx,posy};
+    return {posx,posy}; // 返回Player的位置
 }
 
 // logic
@@ -230,26 +231,26 @@ Con_Hul Con(Item &c,float dx=0,float dy=0) {
         {c.xpos-c.X+dx,c.ypos+c.Y-1+dy},
         {c.xpos+c.X-1+dx,c.ypos+c.Y-1+dy},
         {c.xpos+c.X-1+dx,c.ypos-c.Y+dy}
-    };
+    }; // 返回碰撞块
 }
 
 Con_Hul Mer(Con_Hul A,Con_Hul B) {
     A.insert(A.end(),B.begin(),B.end());
-    return Andrew(A);
+    return Andrew(A); // 合并两个碰撞块的凸包
 }
 
-float fixMovementX(Creature &c) {
+float fixMovementX(Creature &c) { // 计算位移
     if(syn(c.velx)==0) return 0;
     int xl=std::max(0,(int)floor((c.xpos+390.)/20.)),xr=(int)ceil((c.xpos+390.)/20.),
         yl=std::max(0,(int)floor((290.-c.ypos)/20.)),yr=(int)ceil((290.-c.ypos)/20.);
     float nx=c.xpos+c.velx;
     xl=std::min(xl,std::max(0,(int)floor((nx+390)/20.)));
     xr=std::max(xr,(int)ceil((nx+390.)/20.));
-    xl=std::max(0,xl-1); xr=std::min(39,xr+1); yl=std::max(0,yl-1); yr=std::min(29,yr+1);
-    Con_Hul MoveCrashBox=Mer(Con(c),Con(c,c.velx,0));
-    for(int i=yl;i<=yr;i++) for(int j=xl;j<=xr;j++) if(MapManager::Map[i][j]) {
-        float Y=10+(14-i)*20,X=10+(j-20)*20;
-        if(!chk_PP(MoveCrashBox,std::vector<Point>{{X-10,Y-10},{X-10,Y+9},{X+9,Y+9},{X+9,Y-10}})) {
+    xl=std::max(0,xl-1); xr=std::min(39,xr+1); yl=std::max(0,yl-1); yr=std::min(29,yr+1); // 计算可能有交的范围
+    Con_Hul MoveCrashBox=Mer(Con(c),Con(c,c.velx,0)); // 路径碰撞块
+    for(int i=yl;i<=yr;i++) for(int j=xl;j<=xr;j++) if(MapManager::Map[i][j]) { // 有物块
+        float Y=10+(14-i)*20,X=10+(j-20)*20; // 计算位置
+        if(!chk_PP(MoveCrashBox,std::vector<Point>{{X-10,Y-10},{X-10,Y+9},{X+9,Y+9},{X+9,Y-10}})) { // 是否有交
             c.velx = 0; break ;
         } 
     }
@@ -297,15 +298,15 @@ float fixMovement(Bullet &c) {
 
 bool checkfloat(Creature &c) {
     float nvy = c.vely; c.vely = -1;
-    float d = fixMovementY(c);
+    float d = fixMovementY(c); // 看能不能向下移动
     if(d != 0) c.accy = -0.25; else c.accy = 0;
     c.vely = nvy;
     return c.accy != 0;
 }
 
-void calcDamage(Creature &c,int Atk=-1) {
+void calcDamage(Creature &c,int Atk=-1) { // 伤害计算
     Con_Hul MoveCrash=Con(c);
-    for(auto &B: MapManager::Bullets) if(!B.use&&B.type!=c.type&&!chk_PP(MoveCrash,Con(B))) {
+    for(auto &B: MapManager::Bullets) if(!B.use&&B.type!=c.type&&!chk_PP(MoveCrash,Con(B))) { // 判断子弹类型和是否碰撞
         if(Atk==-1) c.health -= B.atk; else c.health-=Atk;
         std::cerr<<"!"<<c.type<<' '<<c.health<<std::endl;
         B.use = 1;
