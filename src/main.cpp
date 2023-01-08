@@ -146,9 +146,11 @@ int main() {
                     if(Atk&&(!chk_PP(Con(c),Con(Knife)))) c.health-=7;
                 }
                 if((levelx==2||levelx==4)&&(clock()-leveltim)>5000) {
+                    leveltim=clock();
                     My.health--;
                 }
                 if(levelx==3&&(clock()-leveltim)>3000) {
+                    leveltim=clock();
                     My.health--;
                 }
 

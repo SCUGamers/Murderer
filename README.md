@@ -1,2 +1,11 @@
-# Games present by cyfabc123
+# Murderer
 
+*cyfabc123* and *tiger1218*
+
+## Dependency
+
+MinGW-w64
+
+OpenGL
+
+GLFW

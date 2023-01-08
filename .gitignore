@@ -1,3 +1,9 @@
+# Setting files
+
 .vscode/
+
+# Output files
+
 *.exe
 *.o
+*.dll
